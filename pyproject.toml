@@ -1,6 +1,6 @@
 [project]
 authors = [{name = "Tyler Erickson", email = "tyler@vorgeo.com"}]
-name = "TEMPLATE-rle-assessment"
+name = "rle-tyler2"
 requires-python = ">= 3.11"
 version = "0.1.9"
 
@@ -80,4 +80,4 @@ pytest = ">=9.0.2,<10"
 libgdal-arrow-parquet = ">=3.12.3,<4"
 
 [tool.pixi.activation.env]
-GOOGLE_CLOUD_PROJECT = "goog-rle-assessments"
+GOOGLE_CLOUD_PROJECT = "rle-tyler"
