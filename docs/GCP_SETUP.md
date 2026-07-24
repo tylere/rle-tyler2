@@ -5,7 +5,7 @@ This guide explains how to configure Google Cloud Platform (GCP) authentication 
 ## Prerequisites
 
 - [Google Cloud CLI](https://cloud.google.com/sdk/docs/install) installed and authenticated
-- Access to the GCP project (e.g., `PLACEHOLDER_GCP_PROJECT_ID`)
+- Access to the GCP project (e.g., `rle-tyler`)
 - Admin access to the GitHub repository
 
 ## One-Time Setup (Infrastructure)
@@ -16,7 +16,7 @@ These steps only need to be done once per GCP project. If the Workload Identity 
 
 ```bash
 gcloud iam workload-identity-pools create "github-pool" \
-  --project="PLACEHOLDER_GCP_PROJECT_ID" \
+  --project="rle-tyler" \
   --location="global" \
   --display-name="GitHub Actions Pool"
 ```
@@ -25,7 +25,7 @@ gcloud iam workload-identity-pools create "github-pool" \
 
 ```bash
 gcloud iam workload-identity-pools providers create-oidc "github-provider" \
-  --project="PLACEHOLDER_GCP_PROJECT_ID" \
+  --project="rle-tyler" \
   --location="global" \
   --workload-identity-pool="github-pool" \
   --display-name="GitHub Provider" \
@@ -38,7 +38,7 @@ gcloud iam workload-identity-pools providers create-oidc "github-provider" \
 
 ```bash
 gcloud iam service-accounts create "github-actions-rle" \
-  --project="PLACEHOLDER_GCP_PROJECT_ID" \
+  --project="rle-tyler" \
   --display-name="GitHub Actions RLE"
 ```
 
@@ -49,12 +49,12 @@ The service account needs two roles:
 - `roles/serviceusage.serviceUsageConsumer` - Permission to use GCP APIs
 
 ```bash
-gcloud projects add-iam-policy-binding "PLACEHOLDER_GCP_PROJECT_ID" \
-  --member="serviceAccount:github-actions-rle@PLACEHOLDER_GCP_PROJECT_ID.iam.gserviceaccount.com" \
+gcloud projects add-iam-policy-binding "rle-tyler" \
+  --member="serviceAccount:github-actions-rle@rle-tyler.iam.gserviceaccount.com" \
   --role="roles/earthengine.writer"
 
-gcloud projects add-iam-policy-binding "PLACEHOLDER_GCP_PROJECT_ID" \
-  --member="serviceAccount:github-actions-rle@PLACEHOLDER_GCP_PROJECT_ID.iam.gserviceaccount.com" \
+gcloud projects add-iam-policy-binding "rle-tyler" \
+  --member="serviceAccount:github-actions-rle@rle-tyler.iam.gserviceaccount.com" \
   --role="roles/serviceusage.serviceUsageConsumer"
 ```
 
@@ -63,7 +63,7 @@ gcloud projects add-iam-policy-binding "PLACEHOLDER_GCP_PROJECT_ID" \
 You'll need the GCP project number (not the project ID) for the next steps:
 
 ```bash
-gcloud projects describe PLACEHOLDER_GCP_PROJECT_ID --format="value(projectNumber)"
+gcloud projects describe rle-tyler --format="value(projectNumber)"
 ```
 
 ## Per-Repository Setup
@@ -76,8 +76,8 @@ Replace `PROJECT_NUMBER` with your actual project number and `YOUR-REPO-NAME` wi
 
 ```bash
 gcloud iam service-accounts add-iam-policy-binding \
-  "github-actions-rle@PLACEHOLDER_GCP_PROJECT_ID.iam.gserviceaccount.com" \
-  --project="PLACEHOLDER_GCP_PROJECT_ID" \
+  "github-actions-rle@rle-tyler.iam.gserviceaccount.com" \
+  --project="rle-tyler" \
   --role="roles/iam.workloadIdentityUser" \
   --member="principalSet://iam.googleapis.com/projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/attribute.repository/RLE-Assessment/YOUR-REPO-NAME"
 ```
@@ -86,7 +86,7 @@ gcloud iam service-accounts add-iam-policy-binding \
 
 ```bash
 gcloud iam workload-identity-pools providers describe "github-provider" \
-  --project="PLACEHOLDER_GCP_PROJECT_ID" \
+  --project="rle-tyler" \
   --location="global" \
   --workload-identity-pool="github-pool" \
   --format="value(name)"
@@ -104,20 +104,20 @@ Go to your repository's **Settings > Secrets and variables > Actions** and add:
 | Secret Name | Value |
 |-------------|-------|
 | `GCP_WORKLOAD_IDENTITY_PROVIDER` | `projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/providers/github-provider` |
-| `GCP_SERVICE_ACCOUNT` | `github-actions-rle@PLACEHOLDER_GCP_PROJECT_ID.iam.gserviceaccount.com` |
+| `GCP_SERVICE_ACCOUNT` | `github-actions-rle@rle-tyler.iam.gserviceaccount.com` |
 
 ## Rasterize the Ecosystem Map to a COG (optional)
 
 To store a high-resolution raster of the ecosystem map as a Cloud-Optimized GeoTIFF (COG) in the GCP project — for example, to serve later as a web-map layer — run:
 
 ```bash
-python scripts/rasterize_ecosystem_to_cog.py --project PLACEHOLDER_GCP_PROJECT_ID
+python scripts/rasterize_ecosystem_to_cog.py --project rle-tyler
 ```
 
 This manual step:
 
 - rasterizes the `ecosystem_source` vector (from `config/country_config.yaml`) in the `ESRI:54034` projection used by the AOO/EOO calculations, at the resolution set by `ecosystem_raster.resolution_m` (default 100 m; override with `--resolution 10`);
-- **enables the `storage.googleapis.com` API** and **creates a public-read bucket** `gs://PLACEHOLDER_GCP_PROJECT_ID-rle-cogs` if it does not already exist;
+- **enables the `storage.googleapis.com` API** and **creates a public-read bucket** `gs://rle-tyler-rle-cogs` if it does not already exist;
 - uploads the COG and records its public URL back into `config/country_config.yaml` under `ecosystem_raster.cog_url`.
 
 It is intentionally **not** part of `pixi run render` (rasterizing + uploading is slow and needs GCP write credentials). Existing COGs are skipped; re-run with `--force` after the ecosystem data changes.
@@ -157,13 +157,13 @@ If notebooks fail with Earth Engine errors:
 
 If you see an error like:
 ```
-Caller does not have required permission to use project PLACEHOLDER_GCP_PROJECT_ID.
+Caller does not have required permission to use project rle-tyler.
 Grant the caller the roles/serviceusage.serviceUsageConsumer role...
 ```
 
 The service account is missing the Service Usage Consumer role. Run:
 ```bash
-gcloud projects add-iam-policy-binding "PLACEHOLDER_GCP_PROJECT_ID" \
-  --member="serviceAccount:github-actions-rle@PLACEHOLDER_GCP_PROJECT_ID.iam.gserviceaccount.com" \
+gcloud projects add-iam-policy-binding "rle-tyler" \
+  --member="serviceAccount:github-actions-rle@rle-tyler.iam.gserviceaccount.com" \
   --role="roles/serviceusage.serviceUsageConsumer"
 ```
