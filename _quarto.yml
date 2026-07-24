@@ -1,0 +1,72 @@
+project:
+  type: book
+  # The client-side COG viewer module is loaded by the ecosystem pages as
+  # ../../../assets/cog-viewer.mjs; copy it into the rendered site.
+  resources:
+    - assets/cog-viewer.mjs
+  # Share the lonboard/anywidget map bundle across pages instead of inlining a
+  # ~3.4 MB copy per map (see scripts/dedupe_widget_assets.py).
+  post-render:
+    - scripts/dedupe_widget_assets.py
+
+execute:
+  freeze: auto
+
+# The criteria table (rowspan) and the pandas dataframe outputs in the criterion-B
+# pages are raw HTML tables Quarto can't parse into Pandoc tables; it skips them and
+# warns. Disable raw-HTML-table processing to silence those warnings (no visual change;
+# native Markdown tables are unaffected).
+html-table-processing: none
+
+book:
+  title: "Threatened ecosystems of Ruritania"
+  subtitle: An IUCN Red List of Ecosystems Assessment
+  date: "1234-12-31"
+  sidebar:
+    collapse-level: 1
+  downloads: [pdf]
+  chapters:
+    - index.qmd
+    - content/0.1_foreword.qmd
+    - content/0.2_preface.qmd
+    - content/0.3_acknowledgments.qmd
+    - content/0.4_coordinating_orgs.qmd
+    - content/0.5_summary.qmd
+    - content/1.0_introduction.qmd
+    - content/2_ecosystem_overview.qmd
+    - content/3_ecosystem_description.qmd
+    - part: "1 · M1.1.1 - Null Island Marine Shelf"
+      chapters:
+        - content/3_ecosystem_assessments/M1.1.1/M1.1.1.qmd
+        - content/3_ecosystem_assessments/M1.1.1/M1.1.1_crit_b.qmd
+    - part: "2 · T1.1.1 - Null Island Tropical Forest"
+      chapters:
+        - content/3_ecosystem_assessments/T1.1.1/T1.1.1.qmd
+        - content/3_ecosystem_assessments/T1.1.1/T1.1.1_crit_b.qmd
+    - part: "3 · T6.5.1 - Null Island Alpine Grassland"
+      chapters:
+        - content/3_ecosystem_assessments/T6.5.1/T6.5.1.qmd
+        - content/3_ecosystem_assessments/T6.5.1/T6.5.1_crit_b.qmd
+    - references.qmd
+
+bibliography: 
+  - references_iucn.bib
+  - references_country_specific.bib
+
+number-sections: false
+
+format:
+  html:
+    theme: cosmo
+    css: styles.css
+  pdf:
+    documentclass: scrreprt
+
+show-instructions: true
+tbl-cap-location: top
+
+# Content Constants
+country-name: Ruritania
+country-code: XX  # https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2
+version: 0.1
+year: 1234

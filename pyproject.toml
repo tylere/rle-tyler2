@@ -1,0 +1,83 @@
+[project]
+authors = [{name = "Tyler Erickson", email = "tyler@vorgeo.com"}]
+name = "TEMPLATE-rle-assessment"
+requires-python = ">= 3.11"
+version = "0.1.9"
+
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling"]
+
+[tool.pixi.workspace]
+channels = ["conda-forge"]
+platforms = ["osx-arm64", "linux-64"]
+# pixi.lock uses lock-file format v7 (introduced in pixi 0.68.0); older pixi
+# versions cannot read it. pixi prompts to self-update when this is not met.
+requires-pixi = ">=0.68.0"
+
+[tool.pixi.pypi-dependencies]
+# For local development use the editable paths below:
+# iucn_get_data = { path = "../iucn-get-data", editable = true }
+# rle-python = { path = "../rle-python", editable = true, extras = ["viz"] }
+# rle-python-gee = { path = "../rle-python-gee", editable = true }
+
+# For production use:
+iucn_get_data = { git = "https://github.com/RLE-Assessment/iucn-get-data" }
+# TEMP: track rle-python GitHub HEAD (main) instead of the v0.2.0 tag.
+# Revert to the tagged pin below once the fix is released.
+# rle-python = { git = "https://github.com/RLE-Assessment/rle-python", tag = "v0.2.0", extras = ["viz"] }
+rle-python = { git = "https://github.com/RLE-Assessment/rle-python", branch = "main", extras = ["viz"] }
+rle-python-gee = { git = "https://github.com/RLE-Assessment/rle-python-gee", tag = "v0.2.1" }
+
+wkls = ">=1.1.0, <2"
+
+# The ecosystem COG is displayed client-side by assets/cog-viewer.mjs (deck.gl
+# via esm.sh), so no Python COG/raster libraries are needed here.
+
+[tool.pixi.tasks]
+tinytex-install = "quarto install tinytex"
+# Rebuild the derived ecosystem layer (content/3_ecosystem_assessments/ + _quarto.yml
+# chapters) from config/ecosystems/ before rendering, scaffolding config/ecosystems/
+# from ecosystem_source if it is missing. Use `pixi run render` / `pixi run preview`
+# (not raw `quarto render`), so the book config is consistent before Quarto reads it.
+build-ecosystems = "python scripts/build_ecosystems.py"
+# Precompute the caches renders read (ecosystem-sorted parquet + AOO grid). When
+# ecosystem_source.optimized_data / aoo_grid_cache_url are unset, the destinations
+# are derived from the GCP project + data filename and recorded back into the
+# config: `pixi run build-caches --project <gcp-project>` (or set
+# GOOGLE_CLOUD_PROJECT). Run once (and after changing ecosystem_source.data) on a
+# machine with enough RAM; renders then read the caches. NOT a render dependency.
+build-caches = "python scripts/build_caches.py"
+# Write a query-optimized GeoParquet copy of a vector source (sorted by the
+# ecosystem column + small row groups) so per-ecosystem reads use predicate
+# pushdown and don't time out on a single giant row group. Reproducible data-prep
+# step, run on a local copy of the source, then publish the output:
+# `pixi run optimize-source INPUT OUTPUT.parquet --ecosystem-column <col>`.
+optimize-source = "python scripts/optimize_source.py"
+# Rasterize the ecosystem_source vector to a categorical COG in GCS and record
+# its public URL under ecosystem_raster, so the assessment pages can display the
+# ecosystem map. Idempotent: the object key encodes the data source + resolution,
+# so it rebuilds when ecosystem_source.data changes and is a cheap existence
+# check otherwise. Needs GCP write credentials + billing, and must run before
+# `render` (which reads ecosystem_raster.cog_url). Run by the deploy workflow;
+# NOT a render dependency, so local renders and GCP-less repos still work.
+rasterize = "python scripts/rasterize_ecosystem_to_cog.py"
+# Fail fast (before the expensive render) when the caches a render depends on are
+# missing/stale, or when a large ecosystem_source.data has no caches configured and
+# would OOM CI. HTTP-only (no GCP creds); run by the deploy workflow before render.
+check-caches = "python scripts/check_caches.py"
+render = { cmd = "quarto render", depends-on = ["build-ecosystems"] }
+preview = { cmd = "quarto preview", depends-on = ["build-ecosystems"] }
+
+[tool.pixi.dependencies]
+python = "==3.11"
+jupyter = ">=1.1.1,<2"
+quarto = ">=1.8.27,<2"
+pyyaml = ">=6.0.3,<7"
+geopandas = ">=1.1.3,<2"
+ipykernel = ">=7.2.0,<8"
+pytest = ">=9.0.2,<10"
+libgdal-arrow-parquet = ">=3.12.3,<4"
+
+[tool.pixi.activation.env]
+GOOGLE_CLOUD_PROJECT = "goog-rle-assessments"

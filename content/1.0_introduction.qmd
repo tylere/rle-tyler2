@@ -1,0 +1,11 @@
+---
+numbering:
+  figure:
+    enumerator: 1.%s
+---
+
+# Introduction
+
+{{< include 1.1_background.qmd >}}
+{{< include 1.2_overview.qmd >}}
+{{< include 1.3_intro_iucn_rle.qmd >}}

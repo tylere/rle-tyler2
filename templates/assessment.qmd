@@ -1,0 +1,305 @@
+---
+suppress-bibliography: true
+jupyter: python3
+---
+
+# Assessment {.unnumbered}
+
+```{python}
+#| label: set-ecosystem-code
+#| echo: false
+
+# Default ecosystem code for template development.
+# This line is replaced by build_ecosystem_pages.py for each ecosystem.
+ecosystem_code = 'M1.1.1'
+```
+
+```{python}
+#| label: open-ecosystem-config
+#| echo: false
+import os
+import yaml
+from pathlib import Path
+
+# Resolve config path relative to the project root.
+project_root = os.environ.get('PIXI_PROJECT_ROOT', str(Path('..').resolve()))
+config_path = Path(project_root) / 'config' / 'ecosystems' / ecosystem_code / 'ecosystem.yaml'
+
+with open(config_path) as f:
+    eco = yaml.safe_load(f)
+
+# Extract commonly used fields.
+name = eco.get('ecosystem_name', 'TODO')
+index = eco.get('index')
+authors = ', '.join(eco.get('authors', []))
+credits = eco.get('assessment_credits', {})
+
+# Page heading: prefix with the ecosystem index when available (the same
+# numeric id encoded in the ecosystem COG).
+heading = f"{index} · {name}" if index is not None else name
+```
+
+```{python}
+#| label: load-ecosystem-data
+#| echo: false
+import sys
+from rle.core import Ecosystems, criterion_b_status, rle_category
+
+# Shared config helpers live in scripts/; make them importable from here.
+sys.path.insert(0, str(Path(project_root) / 'scripts'))
+from _config import ensure_vector_source
+
+country_config_path = Path(project_root) / 'config' / 'country_config.yaml'
+with open(country_config_path) as f:
+    country_config = yaml.safe_load(f)
+
+source = country_config['ecosystem_source']
+# ecosystem_code_column is optional: fall back to the name column.
+ecosystem_column = source.get('ecosystem_code_column') or source.get('ecosystem_name_column')
+# Prefer the ecosystem-sorted `optimized_data` copy when configured, so that
+# filtering to one ecosystem uses parquet predicate pushdown instead of loading
+# the whole national map into memory. Falls back to `data`.
+ecosystems = Ecosystems.from_file(
+    ensure_vector_source(source.get('optimized_data') or source['data']),
+    ecosystem_column=ecosystem_column,
+    ecosystem_name_column=source.get('ecosystem_name_column'),
+    functional_group_column=source.get('functional_group_column')
+)
+ecosystem = ecosystems.filter(ecosystem_code)
+if ecosystem.size() > 0:
+    eoo = ecosystem.eoo
+    aoo = ecosystem.aoo
+else:
+    eoo = None
+    aoo = None
+```
+
+# `{python} heading` {.unnumbered}
+
+<!-- Ecosystem index -->
+<!-- [Ecosystem index:]{.parameter}&nbsp;
+`{python} index if index is not None else 'N/A'` -->
+
+<!-- Authors -->
+[Authors:]{.parameter}&nbsp;
+`{python} authors`
+
+<!-- Biome -->
+[Biome:]{.parameter}&nbsp;
+`{python} eco.get('biome', 'TODO')`
+
+<!-- Functional Group -->
+[Functional Group:]{.parameter}&nbsp;
+`{python} eco.get('functional_group', 'TODO')`
+
+<!-- Global classification -->
+[Global classification:]{.parameter}&nbsp;
+`{python} ecosystem_code`
+
+<!-- IUCN Status -->
+[IUCN Status:]{.parameter}&nbsp;
+`{python} eco.get('iucn_status', 'TODO')`
+
+<!-- Description -->
+[Description:]{.parameter}&nbsp;
+`{python} eco.get('description', 'TODO')`
+
+<!-- Distribution -->
+[Distribution:]{.parameter}&nbsp;
+`{python} eco.get('distribution', 'TODO')`
+
+<!-- Ecosystem map (COG) -->
+[Ecosystem map:]{.parameter}&nbsp;
+
+```{python}
+#| label: display-ecosystem-cog
+#| echo: false
+#| output: asis
+# Display the published ecosystem COG with a browser-only viewer. The COG is
+# read client-side over HTTP range requests by assets/cog-viewer.mjs (deck.gl
+# COGLayer via esm.sh), which selects the pyramid level for the current zoom
+# (true level-of-detail) and reprojects ESRI:54034 on the GPU. THIS ecosystem's
+# pixels are highlighted (crimson) over the muted other classes.
+import json
+
+raster_cfg = country_config.get('ecosystem_raster') or {}
+cog_url = raster_cfg.get('cog_url')
+
+if not cog_url:
+    print(
+        "::: {.callout-note}\n"
+        "The ecosystem map raster (COG) has not been built yet. Run "
+        "`python scripts/rasterize_ecosystem_to_cog.py` to generate and "
+        "publish it, then re-render. This requires billing to be enabled on "
+        "the GCP project — Cloud Storage buckets, unlike Earth Engine, cannot "
+        "be created without it.\n"
+        ":::"
+    )
+else:
+    # Generated pages live at content/3_ecosystem_assessments/<code>/<code>.qmd,
+    # so the shared viewer module (registered as a Quarto resource) is three
+    # levels up. Deps are pulled from esm.sh inside the module.
+    module_src = "../../../assets/cog-viewer.mjs"
+    viewer_opts = {"url": cog_url, "index": index, "height": 520}
+    print(
+        f'<div id="ecosystem-cog-viewer" style="height:520px;width:100%;"></div>\n'
+        f'<script type="module">\n'
+        f'import mount from "{module_src}";\n'
+        f'mount(document.getElementById("ecosystem-cog-viewer"), {json.dumps(viewer_opts)});\n'
+        f'</script>'
+    )
+```
+
+<!-- Characteristic Native Biota -->
+[Characteristic Native Biota:]{.parameter}&nbsp;
+`{python} eco.get('characteristic_native_biota', 'TODO')`
+
+<!-- Abiotic environment -->
+[Abiotic environment:]{.parameter}&nbsp;
+`{python} eco.get('abiotic_environment', 'TODO')`
+
+<!-- Key processes and interactions -->
+[Key processes and interactions:]{.parameter}&nbsp;
+`{python} eco.get('key_processes_and_interactions', 'TODO')`
+
+<!-- Major threats -->
+[Major threats:]{.parameter}&nbsp;
+`{python} eco.get('major_threats', 'TODO')`
+
+<!-- Ecosystem collapse definition -->
+[Ecosystem collapse definition:]{.parameter}&nbsp;
+`{python} eco.get('ecosystem_collapse_definition', 'TODO')`
+
+<!-- Assessment summary -->
+[Assessment summary:]{.parameter}&nbsp;
+**`{python} eco.get('assessment_summary', 'TODO')`**
+
+<!-- Assessment information -->
+[Assessment information:]{.parameter}&nbsp;
+
+```{python}
+#| label: build-criteria-table
+#| echo: false
+#| output: asis
+
+def _status_cell(value):
+    # Color-code a status cell by its RLE category (VU/EN/CR/LC/...); values that
+    # are not a known category code (e.g. a placeholder) render plain.
+    cat = rle_category(value)
+    if not cat:
+        return f'      <td>{value}</td>'
+    bg = cat['background_color']
+    fg = '#000' if bg in ('yellow', 'green', 'lightgray', 'white') else '#fff'
+    return (
+        f'      <td style="background:{bg};color:{fg};font-weight:bold;'
+        f'text-align:center;">{value}</td>'
+    )
+
+
+def _build_criteria_table(criteria_status):
+    rows = []
+    criteria_order = [
+        ("A", ["A1", "A2a", "A2b", "A3"]),
+        ("B", ["B1", "B2", "subcriteria", "B3"]),
+        ("C", ["C1", "C2a", "C2b", "C3"]),
+        ("D", ["D1", "D2a", "D2b", "D3"]),
+        ("E", ["E"]),
+    ]
+    for criterion, subcriteria in criteria_order:
+        status = criteria_status.get(criterion, {})
+        for i, sub in enumerate(subcriteria):
+            value = status.get(sub, "NE")
+            if i == 0:
+                rows.append(
+                    f'    <tr>\n'
+                    f'      <td rowspan="{len(subcriteria)}">Criterion {criterion}</td>\n'
+                    f'      <td>{sub}</td>\n'
+                    f'{_status_cell(value)}\n'
+                    f'    </tr>'
+                )
+            else:
+                rows.append(
+                    f'    <tr>\n'
+                    f'      <td>{sub}</td>\n'
+                    f'{_status_cell(value)}\n'
+                    f'    </tr>'
+                )
+    return (
+        '<table class="criteria-table">\n'
+        '  <thead>\n'
+        '    <tr>\n'
+        '      <th colspan="2">Criteria</th>\n'
+        '      <th>Status</th>\n'
+        '    </tr>\n'
+        '  </thead>\n'
+        '  <tbody>\n'
+        + "\n".join(rows) + "\n"
+        '  </tbody>\n'
+        '</table>'
+    )
+
+# Fill the Criterion B row (B1/B2) with the categories computed from the spatial
+# metrics (EOO/AOO), overriding the manually-authored YAML values. B3 and the
+# a-c sub-conditions stay as authored (not derivable from the spatial metrics).
+criteria_status = dict(eco.get('criteria_status', {}) or {})
+if eoo is not None or aoo is not None:
+    _b = criterion_b_status(eoo_km2=eoo, aoo_cells=aoo)
+    _b_row = dict(criteria_status.get('B', {}) or {})
+    if _b['B1'] is not None:
+        _b_row['B1'] = _b['B1']
+    if _b['B2'] is not None:
+        _b_row['B2'] = _b['B2']
+    criteria_status['B'] = _b_row
+
+print(_build_criteria_table(criteria_status))
+print(
+    '\n::: {.callout-note appearance="simple"}\n'
+    'Criterion B **B1 and B2 are computed from the EOO and AOO spatial thresholds** '
+    '(IUCN RLE Guidelines v2.0). A final listing under B1/B2 also requires at least '
+    'one of sub-conditions (a) continuing decline, (b) threatening processes, or '
+    '(c) few threat-defined locations. Other criteria reflect the assessment config.\n'
+    ':::'
+)
+```
+
+<!-- Assessment outcome -->
+[Assessment outcome:]{.parameter}&nbsp;
+**`{python} eco.get('assessment_outcome', 'TODO')`**
+
+<!-- Year published -->
+[Year published:]{.parameter}&nbsp;
+`{python} eco.get('year_published', 'TODO')`
+
+<!-- Date assessed -->
+[Date assessed:]{.parameter}&nbsp;
+`{python} eco.get('date_assessed', 'TODO')`
+
+<!-- Assessment credits -->
+[Assessment credits:]{.parameter}&nbsp;
+
+Assessed by: `{python} credits.get('assessed_by', 'TODO')`
+
+Reviewed by: `{python} credits.get('reviewed_by', 'TODO')`
+
+Contributions by: `{python} credits.get('contributions_by', 'TODO')`
+
+<!-- Criterion A -->
+[Criterion A:]{.parameter}&nbsp;
+`{python} eco.get('criterion_a_description', 'TODO')`
+
+<!-- Criterion B -->
+[Criterion B:]{.parameter}&nbsp;
+AOO was measured as `{python} aoo if aoo is not None else 'N/A'` (10 km x 10 km) grid cells .
+EOO was measured as `{python} f"{eoo:.0f}" if eoo is not None else 'N/A'` km².
+
+<!-- Criterion C -->
+[Criterion C:]{.parameter}&nbsp;
+`{python} eco.get('criterion_c_description', 'TODO')`
+
+<!-- Criterion D -->
+[Criterion D:]{.parameter}&nbsp;
+`{python} eco.get('criterion_d_description', 'TODO')`
+
+<!-- Criterion E -->
+[Criterion E:]{.parameter}&nbsp;
+`{python} eco.get('criterion_e_description', 'TODO')`

@@ -1,0 +1,32 @@
+## Background
+
+To support the {{< meta country-name >}} National Ecosystem Assessment,
+{{< meta country-name >}}'s terrestrial ecosystems were assessed under the 
+International Union for the Conservation of Nature (IUCN) Red List of 
+Ecosystems Categories and Criteria.
+
+This report describes the development of the IUCN Red List of Ecosystems for
+{{< meta country-name >}}, which included:
+
+- A detailed literature review of all published and unpublished material
+  relevant to the status of ecosystems in {{< meta country-name >}};
+- The development of an ecosystem typology for {{< meta country-name >}}
+  suitable for conducting a national scale IUCN Red List of Ecosystems assessment;
+- ...
+- An expert review process for the ecosystem typology, descriptions and assessments.
+
+![A map of {{< meta country-name >}} showing the area of assessment in grey](../images/country_map.png){#fig-country-map width=500px fig-align="center"}
+
+::: {.content-hidden unless-meta="show-instructions"}
+
+:::: {.callout-important}
+## How to customize the Background section of the Introduction
+
+- To modify the background text, edit the `content/1.1_background.qmd` file.
+- To remove the background section, edit the `content/1.0_introduction.qmd` file
+  and remove the `{{< include 1.1_background.qmd >}}` line.
+
+**To hide these instructions on all pages, set `show-instructions: false`
+in the `_quarto.yml` file.**
+::::
+:::

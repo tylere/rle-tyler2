@@ -1,0 +1,37 @@
+---
+number-sections: false
+---
+
+# Summary {.unnumbered}
+
+We gratefully acknowledge the efforts of hundreds of scientists and
+practitioners who have contributed to the understanding of
+{{< meta country-name >}}’s terrestrial ecosystems over the past two centuries.
+Our work is largely a synthesis exercise that would not have been possible
+without the dedication and contributions of those before us.
+
+We also acknowledge all contributors to this project, particularly those who
+attended workshops in {{< meta country-name >}}.
+Without input from a large and diverse expert group, the development of the 
+{{< meta country-name >}} Ecosystem Typology, the ecosystem descriptions and
+the application of the criteria would not have been possible.
+We also acknowledge the crucial support of ...
+Contributors to this assessment are listed within each ecosystem assessment and
+in Appendix 1.
+
+The work to develop an IUCN Red List of Ecosystems of {{< meta country-name >}}
+was made possible through the funding and support of ...
+
+::: {.content-hidden unless-meta="show-instructions"}
+
+:::: {.callout-important}
+## How to customize the Summary page
+
+- To modify the summary text, edit the `content/0.5_summary.qmd` file.
+- To remove the summary section, edit the `_quarto.yml` file and remove the
+`- content/0.5_summary.qmd` line.
+
+**To hide these instructions on all pages, set `show-instructions: false`
+in the `_quarto.yml` file.**
+::::
+:::

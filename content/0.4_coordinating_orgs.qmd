@@ -1,0 +1,29 @@
+---
+number-sections: false
+---
+
+# Coordinating Organizations  {.unnumbered}
+
+## Organization #1
+
+{{< lipsum 1 >}}
+
+## Organization #2
+
+{{< lipsum 1 >}}
+
+
+::: {.content-hidden unless-meta="show-instructions"}
+
+:::: {.callout-important}
+## How to customize the Coordinating Organizations page
+
+- To modify the coordinating organizations text, edit the
+  `content/0.4_coordinating_orgs.qmd` file.
+- To remove the coordinating organizations section, edit the `_quarto.yml` file
+  and remove the `- content/0.4_coordinating_orgs.qmd` line.
+
+**To hide these instructions on all pages, set `show-instructions: false`
+in the `_quarto.yml` file.**
+::::
+:::

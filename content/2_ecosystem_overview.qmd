@@ -1,0 +1,342 @@
+---
+jupyter: python3
+keep-ipynb: true
+format:
+  html:
+    other-links:
+      - text: Download Notebook
+        icon: journal-code
+        href: 2_ecosystem_overview.ipynb
+title: "Terrestrial Ecosystems of {{< meta country-name >}}"
+numbering:
+  figure:
+    enumerator: 2.%s
+---
+
+```{python}
+#| label: import-modules
+#| echo: false
+#| output: false
+import os
+from pprint import pprint
+
+import geopandas as gpd
+import yaml
+
+import rle.core
+import iucn_get_data
+from iucn_get_data import Typology
+
+print(f'{rle.core.__version__ = }')
+print(f'{iucn_get_data.__version__ = }')
+```
+
+```{python}
+#| label: load-country-config
+#| echo: false
+#| output: false
+# Load up the country-level configuration.
+with open('../config/country_config.yaml', 'r') as f:
+    config = yaml.safe_load(f)
+pprint(config)
+```
+
+```{python}
+#| label: load-ecosystems-data
+#| echo: false
+#| output: false
+# Load the country's ecosystems data as a GeoDataFrame.
+#
+# Column roles come from the config. The functional-group column is optional:
+# when it is not configured (or not present in the data), the GET typology
+# output (functional group, biome, realm) is omitted below.
+src = config['ecosystem_source']
+# ecosystem_code_column is optional: fall back to the name column.
+ecosystem_column = src.get('ecosystem_code_column') or src.get('ecosystem_name_column')  # e.g. ECO_CODE
+ecosystem_name_column = src.get('ecosystem_name_column')   # e.g. ECO_NAME
+functional_group_column = src.get('functional_group_column')  # e.g. EFG1 or None
+
+eco = rle.core.Ecosystems.from_file(
+    src['data'],
+    ecosystem_column=ecosystem_column,
+    ecosystem_name_column=ecosystem_name_column,
+    functional_group_column=functional_group_column,
+)
+ecosystems_df = eco.to_geodataframe()
+
+# The functional-group column is present only when it is both configured and
+# actually in the loaded data.
+has_functional_group = (
+    functional_group_column is not None
+    and functional_group_column in ecosystems_df.columns
+)
+```
+
+```{python}
+#| label: functional-group-column-warning
+#| echo: false
+#| output: asis
+# Surface a visible warning when a functional-group column is configured but
+# absent from the data. Without this, the GET-typology sections below are
+# omitted silently, so a typo (or a dataset with no GET crosswalk) looks
+# indistinguishable from an intentional choice.
+if functional_group_column is not None and not has_functional_group:
+    available = ", ".join(map(str, ecosystems_df.columns))
+    print(
+        "::: {.callout-warning}\n"
+        "## Functional-group column not found\n\n"
+        f"The configured `functional_group_column` "
+        f"(`{functional_group_column}`) is not a column in the ecosystem "
+        "data, so the IUCN Global Ecosystem Typology sections (functional "
+        "group, biome, realm) are omitted from this chapter.\n\n"
+        "Set `functional_group_column` in `config/country_config.yaml` to a "
+        "valid column (or remove it if the data has no GET crosswalk). "
+        f"Available columns: {available}\n"
+        ":::\n"
+    )
+```
+
+```{python}
+#| label: calculate-ecosystem-type-and-biome-counts
+#| echo: false
+ecosystem_type_count = len(eco.unique_ecosystems())
+biome_count = len(eco.unique_functional_groups()) if has_functional_group else None
+```
+
+
+```{python}
+#| label: ecosystem-overview-narrative
+#| echo: false
+#| output: asis
+# Build the overview text from the data. The GET-typology sentences (biome
+# count, IUCN GET crosswalk, realm/biome/functional-group hierarchy) are
+# included only when a functional-group column is present.
+country = config['country_name']
+
+sentences = []
+if has_functional_group:
+    sentences.append(
+        f"The {country} ecosystem typology includes {ecosystem_type_count} "
+        f"ecosystem types across {biome_count} biomes (@tbl-typology)."
+    )
+    sentences.append(
+        "The ecosystem typology is consistent with the IUCN global ecosystem "
+        "typology [@keith2020get] to support crosswalks and comparisons with "
+        "Red Lists of ecosystems in other countries and regions."
+    )
+    sentences.append(
+        f"The {country} ecosystem typology has a hierarchical structure, where "
+        "each ecosystem type is assigned to a realm, biome and functional group "
+        "(ecotype). Realm refers to one of the four component media in the "
+        "biosphere, biome is the segment of the biosphere united by major "
+        "functional traits and macro-environmental features, and functional "
+        "group is a group of related ecosystems within a biome."
+    )
+else:
+    sentences.append(
+        f"The {country} ecosystem typology includes {ecosystem_type_count} "
+        f"ecosystem types (@tbl-typology)."
+    )
+
+sentences.append(
+    f"The distribution of {country}'s ecosystem types is shown in "
+    "@fig-ecosystem-map, with each ecosystem in a distinct color."
+)
+
+print(" ".join(sentences))
+```
+
+```{python}
+#| label: tbl-typology
+#| echo: false
+#| tbl-cap: "List of the terrestrial ecosystems of {{< meta country-name >}} developed in this project."
+# With a functional-group column, show the full GET typology (realm / biome /
+# functional group / ecosystem). Otherwise show a plain ecosystem list.
+if has_functional_group:
+    # Drop the geometry column: its raw WKB/WKT is very long and adds nothing to
+    # this list of ecosystem types (iucn_get_data also excludes it defensively).
+    typology_df = ecosystems_df.drop(columns="geometry", errors="ignore")
+    typology = iucn_get_data.Typology(
+        language="spanish",
+        ecosystems=typology_df,
+        ecosystems_functional_group_column=functional_group_column,
+        ecosystems_column=ecosystem_column,
+        ecosystem_name_column=ecosystem_name_column,
+    )
+    display(typology)
+else:
+    # De-duplicate in case the code and name columns are the same (no separate
+    # code column), so the same column is not selected twice.
+    cols = list(dict.fromkeys(c for c in (ecosystem_column, ecosystem_name_column) if c))
+    display(
+        ecosystems_df[cols].drop_duplicates().reset_index(drop=True)
+    )
+```
+
+
+```{python}
+#| label: tbl-ecosystem-index
+#| echo: false
+#| tbl-cap: "Ecosystem index for {{< meta country-name >}}. Each index is the pixel value used for that ecosystem in the rasterized ecosystem map (COG)."
+# The canonical index -> code -> name table, written by build_ecosystem_index.py.
+# It is the legend for interpreting ecosystem COG pixel values.
+import pandas as pd
+
+index_csv = os.path.join('..', 'config', 'ecosystems', 'index.csv')
+if os.path.exists(index_csv):
+    display(pd.read_csv(index_csv))
+else:
+    print('(Ecosystem index has not been built yet — run `pixi run build-ecosystems`.)')
+```
+
+
+```{python}
+#| label: display-ecosystem-map
+#| echo: false
+#| output: asis
+# All-ecosystems distribution map. Reuses the same browser COG viewer as the
+# per-ecosystem assessment pages (assets/cog-viewer.mjs, deck.gl COGLayer via
+# esm.sh), but in categorical mode: each ecosystem index gets its own color.
+# The coloring dimension is set by `map_color_by` in the country config
+# (default: one color per ecosystem; `functional_group` groups ecosystems by
+# their functional group). All grouping happens here in Python — the viewer
+# module only maps pixel value -> color from the palette we pass it. Emitted as
+# a Quarto figure Div so @fig-ecosystem-map resolves while the <script> runs.
+import json
+import colorsys
+
+country = config['country_name']
+raster_cfg = config.get('ecosystem_raster') or {}
+cog_url = raster_cfg.get('cog_url')
+color_by = config.get('map_color_by', 'ecosystem')
+
+if not cog_url:
+    print(
+        "::: {.callout-note}\n"
+        "The ecosystem map raster (COG) has not been built yet. Run "
+        "`python scripts/rasterize_ecosystem_to_cog.py` to generate and "
+        "publish it, then re-render.\n"
+        ":::"
+    )
+else:
+    # index -> code, in the same natural-sort order to_raster() used, so the
+    # 1-based position equals the COG pixel value. Prefer the built index.csv;
+    # fall back to unique_ecosystems() when it has not been generated yet.
+    index_csv = os.path.join('..', 'config', 'ecosystems', 'index.csv')
+    if os.path.exists(index_csv):
+        idx_df = pd.read_csv(index_csv)
+        index_to_code = {int(r['index']): str(r['code']) for _, r in idx_df.iterrows()}
+    else:
+        index_to_code = {i: str(c) for i, c in enumerate(eco.unique_ecosystems(), start=1)}
+
+    # Choose the grouping dimension. functional_group needs a real FG column;
+    # otherwise fall back to per-ecosystem coloring with a note.
+    fallback_note = None
+    code_to_group = None
+    if color_by == 'functional_group':
+        if has_functional_group:
+            code_to_group = (
+                ecosystems_df.drop_duplicates(ecosystem_column)
+                .set_index(ecosystem_column)[functional_group_column]
+                .astype(str)
+                .to_dict()
+            )
+        else:
+            fallback_note = (
+                "`map_color_by: functional_group` was set, but no functional-group "
+                "column is configured — coloring by ecosystem instead."
+            )
+            color_by = 'ecosystem'
+
+    # Group key per ecosystem index (the ecosystem code itself, or its FG value).
+    index_group = {}
+    for i, code in index_to_code.items():
+        index_group[i] = code_to_group.get(code, code) if code_to_group is not None else code
+
+    # Distinct color per unique group (golden-ratio HSV -> RGB), assigned in the
+    # first-appearance order of the natural-sorted indices for stability.
+    GOLDEN, SAT, VAL, ALPHA = 0.6180339887498949, 0.65, 0.95, 200
+    group_color = {}
+    for i in sorted(index_group):
+        g = index_group[i]
+        if g not in group_color:
+            k = len(group_color)
+            r, gg, b = colorsys.hsv_to_rgb((k * GOLDEN) % 1.0, SAT, VAL)
+            group_color[g] = [round(r * 255), round(gg * 255), round(b * 255), ALPHA]
+
+    # palette indexed by pixel value; slot 0 and any gap stay transparent.
+    max_index = max(index_group) if index_group else 0
+    palette = [[0, 0, 0, 0] for _ in range(max_index + 1)]
+    for i, g in index_group.items():
+        palette[i] = group_color[g]
+
+    if fallback_note:
+        print("::: {.callout-note}\n" + fallback_note + "\n:::\n")
+
+    module_src = "../assets/cog-viewer.mjs"  # overview page is one level deep
+    viewer_opts = {"url": cog_url, "palette": palette, "height": 520}
+    div_and_script = (
+        '<div id="ecosystem-overview-cog-viewer" style="height:520px;width:100%;"></div>\n'
+        '<script type="module">\n'
+        f'import mount from "{module_src}";\n'
+        f'mount(document.getElementById("ecosystem-overview-cog-viewer"), {json.dumps(viewer_opts)});\n'
+        '</script>'
+    )
+    # Figure Div: last paragraph is the caption; @fig-ecosystem-map references it.
+    print(
+        "::: {#fig-ecosystem-map}\n"
+        + div_and_script + "\n\n"
+        + f"Distribution of the ecosystem types of {country}, each ecosystem "
+        + "drawn in a distinct color, rendered client-side from the published "
+        + "ecosystem COG.\n"
+        + ":::"
+    )
+
+    # Legend: one row per color group, from the same group_color map so the
+    # swatches match the map exactly. Scrollable so it stays compact for
+    # countries with many ecosystems.
+    names = eco.ecosystem_names() if ecosystem_name_column else {}
+    if color_by == 'functional_group':
+        seen = []
+        for i in sorted(index_group):
+            g = index_group[i]
+            if g not in seen:
+                seen.append(g)
+        legend_rows = [(g, str(g)) for g in seen]
+    else:
+        legend_rows = []
+        for i in sorted(index_to_code):
+            code = index_to_code[i]
+            label = code + (f" — {names[code]}" if code in names else "")
+            legend_rows.append((code, label))
+
+    swatches = "".join(
+        '<div style="display:flex;align-items:center;gap:6px;'
+        'font:12px system-ui,sans-serif;">'
+        '<span style="flex:0 0 auto;width:14px;height:14px;border:1px solid #999;'
+        f'background:rgb({group_color[g][0]},{group_color[g][1]},{group_color[g][2]});">'
+        '</span>'
+        f'<span>{label}</span></div>'
+        for g, label in legend_rows
+    )
+    print(
+        '\n<div style="max-height:260px;overflow:auto;margin-top:8px;'
+        'display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));'
+        f'gap:2px 12px;">{swatches}</div>'
+    )
+```
+
+
+::: {.content-hidden unless-meta="show-instructions"}
+
+:::: {.callout-important}
+## How to customize the Ecosystem Overview page
+
+- To modify the ecosystem overview text, edit the `content/2_ecosystem_overview.qmd` file.
+- To remove the ecosystem overview section, edit the `_quarto.yml` file and remove the
+  `- content/2_ecosystem_overview.qmd` line.
+
+**To hide these instructions on all pages, set `show-instructions: false`
+in the `_quarto.yml` file.**
+::::
+:::

@@ -1,0 +1,17 @@
+## The ecosystems of {{< meta country-name >}}: an overview
+
+{{< lipsum 2 >}}
+
+::: {.content-hidden unless-meta="show-instructions"}
+
+:::: {.callout-important}
+## How to customize the Overview section of the Introduction
+
+- To modify the overview text, edit the `content/1.2_overview.qmd` file.
+- To remove the overview section, edit the `content/1.0_introduction.qmd` file
+  and remove the `{{< include 1.2_overview.qmd >}}` line.
+
+**To hide these instructions on all pages, set `show-instructions: false`
+in the `_quarto.yml` file.**
+::::
+:::

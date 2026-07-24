@@ -1,0 +1,28 @@
+---
+number-sections: false
+---
+
+# Foreword {.unnumbered}
+
+{{< lipsum 1 >}}
+
+::: {.content-hidden unless-meta="show-instructions"}
+
+:::: {.callout-important}
+## How to customize the Foreword page
+
+- To modify the foreword text, edit the `content/0.1_foreword.qmd` file.
+- To add an author to the foreword, add the author's name to the `authors` list
+  in the YAML header of the `0.1_foreword.qmd` file.
+  For example:
+```yaml
+authors:
+    - name: Ima Author
+```
+- To remove the foreword section, edit the `_quarto.yml` file and remove the
+  `- content/0.1_foreword.qmd` line.
+
+**To hide these instructions on all pages, set `show-instructions: false`
+in the `_quarto.yml` file.**
+::::
+:::

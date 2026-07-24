@@ -1,0 +1,19 @@
+country_name: Ruritania
+country_code: RU
+view_state:
+  longitude: 0.0
+  latitude: 0.0
+  zoom: 11
+ecosystem_source:
+  data: https://storage.googleapis.com/rle_test_data/null_island.geojson
+  ecosystem_name_column: ECO_NAME
+  ecosystem_code_column: ECO_CODE
+  functional_group_column: EFG1
+# Coloring of the all-ecosystems map on the ecosystem overview page.
+# Optional. One of:
+#   ecosystem         - one distinct color per ecosystem (default when omitted)
+#   functional_group  - one color per functional group; ecosystems in the same
+#                       group share a color (needs functional_group_column).
+# Useful for countries with many ecosystems, where per-ecosystem colors are hard
+# to tell apart.
+# map_color_by: ecosystem

@@ -1,0 +1,96 @@
+## Introduction to the IUCN Red List of Ecosystems
+
+The IUCN Red List of Ecosystems (RLE) aims to support conservation in resource use and
+management decisions by identifying ecosystems most at risk of loss or collapse [@keith2013scientific; @keith2015iucn].
+Similar to the IUCN Red List of Threatened Species, the outcome of an RLE assessment is a list of ecosystems and their status for a region (Figure 1.4; [@rodriguez2011establishing]).
+Because the RLE was developed to promote a consistent framework suitable for assessing and
+monitoring the status of ecosystems, it enables comparisons of collapse risk between countries,
+locations and ecosystem types [@keith2013scientific].
+
+For further information on the development of the RLE protocol, the theory and scientific foundations upon which they were developed, and detailed information on the purpose of each of the five criteria refer to the Guidelines for the application of IUCN Red List of Ecosystems Categories and Criteria [@bland2017guidelines].
+More information on the IUCN Red List of Ecosystems, is available in multiple languages on the IUCN Red List of Ecosystems website ([www.iucnrle.org](https://www.iucnrle.org)).
+
+Assessments of ecosystem types (commonly termed 'assessment units' within Red List of Ecosystems assessments) are conducted by applying five criteria and their associated thresholds, enabling each ecosystem type to be classified according to their risk of collapse (termed 'status').
+To ensure the assessment process is transparent and repeatable, each ecosystem type is clearly described according to the IUCN Red List of Ecosystems guidelines [@bland2017guidelines].
+This standard approach of applying the IUCN Red List of Ecosystems Categories and Criteria to clearly described ecosystems is critical to allow for accurate, comparable and repeatable assessments of ecosystems status and to contribute to the global IUCN Red List of Ecosystems programme.
+
+![The IUCN Red List of Ecosystems categories, indicating the status of ecosystems. Threatened ecosystems are those assessed as Vulnerable, Endangered, or Critically Endangered. Source: [@bland2017guidelines]](../images/iucn_rle_categories.png){#fig-iucn-rle-categories fig-alt="IUCN RLE categories" fig-align="center" width=500px}
+
+### Definitions
+There are several key concepts that must be clearly defined to allow for repeatable ecosystem risk
+assessments:
+
+#### Risk
+
+Risk is defined as the probability of an adverse outcome over a specified time-frame. Here, the adverse outcome is the endpoint of ecosystem decline, which the RLE terms ecosystem collapse.
+
+#### Ecosystem collapse
+
+Understanding the concept of ecosystem collapse is critical for interpreting IUCN RLE assessments.
+For the purposes of the RLE, "an ecosystem is Collapsed when it is virtually certain that its defining biotic or abiotic features are lost from all occurrences, and the characteristic native biota are no longer sustained.
+Collapse may occur when most of the diagnostic components of the characteristic
+native biota are lost from the system, or when functional components (biota that perform key roles in ecosystem organisation) are greatly reduced in abundance and lose the ability to recruit."
+According to the IUCN guidelines [@bland2017guidelines], risks to ecosystems can be caused by a variety of threatening processes that are expressed through different symptoms of ecosystem collapse.
+The RLE risk model groups these symptoms into four major types, which ultimately form the RLE criteria (@fig-iucn-rle-risk-assessment-model).
+
+![The IUCN Red List of Ecosystems risk assessment model. Source: [@bland2017guidelines].](../images/iucn_rle_assessment_model.png){#fig-iucn-rle-risk-assessment-model width=500px fig-align="center"}
+
+For more information on the concept of collapse and how to identify when an ecosystem is collapsed, we recommend referring to the IUCN Red List of Ecosystems guidelines, which describes this in detail (Bland et al., 2017a; Bland et al., 2018).
+In this report and as recommended by the guidelines, we explicitly define collapse for each ecosystem type in Myanmar in their ecosystem descriptions (See section 3).
+
+#### Time frames
+
+Because risks must be assessed over specified time frames, a standard set of time frames are carefully defined in the IUCN Red List of Ecosystems Categories and Criteria.
+There are four specified time frames used in the RLE:
+
+- The historical past. We notionally use the year 1750, which marks the onset of industrial-scale exploitation of ecosystems in South-East Asia;
+- The recent past. This is the past 50 years (1969-2019), which is considered long enough to distinguish directional change from natural variability;
+- Any 50-year period including the recent past, present and future. Predictions and inferences based on past declines, simulation models and any other model considered suitable for assessing risks into the future may be used.
+- The future. Again, predictions are required to assess risks over this time frame and are usually based on models that use information about the response of ecosystems to threatening processes.
+
+### IUCN Red List of Ecosystems Categories and Criteria
+
+#### IUCN Red List of Ecosystems Criteria
+
+To assess the risk of ecosystem collapse, each ecosystem is assessed under five rule-based criteria that form the IUCN Red List of Ecosystems Criteria.
+These criteria were developed following nearly a decade of scientific work focused on understanding pathways of ecosystem decline, degradation, loss and collapse [@nicholson2009assessing; @rodriguez2011establishing; @keith2013scientific; @keith2015iucn; @rodriguez2015practical; @bland2017using; @murray2017use; @keith2018scaling; @murray2018role].
+Importantly, they relate the symptoms of ecosystem decline with the risk that an ecosystem will lose its defining features.
+The five criteria were designed to target different symptoms of ecosystem collapse (@fig-iucn-rle-risk-assessment-model).
+These symptoms are both distributional and functional:
+
+- **Criterion A**: declines in distribution, which reduce carrying capacity for dependent biota;
+- **Criterion B**: restricted distribution, which predisposes the system to spatially explicit threats;
+- **Criterion C**: degradation of the abiotic environment, reducing habitat quality or abiotic niche diversity for component biota; and
+- **Criterion D**: disruption of biotic processes and interactions
+- **Criterion E**: allows for the integration of the above four symptoms into a simulation model of ecosystem dynamics to allow quantitative estimates of the risk of ecosystem collapse.
+
+For further information on the criteria refer to the Guidelines for the application of IUCN Red List of
+Ecosystems Categories and Criteria [@bland2017guidelines].
+
+#### Categories
+
+Applying thresholds (decision rules) for each of the IUCN RLE criteria enables each ecosystem to be assigned to a category of risk ('status').
+An ecosystem assessed under the RLE criteria can be placed into eight categories: Collapsed (CO), Critically Endangered (CR), Endangered (EN), Vulnerable (VU), Near Threatened (NT), Least Concern (LC), Data Deficient (DD), and Not Evaluated (NE, @fig-iucn-rle-categories).
+
+The first six categories (CO, CR, EN, VU, NT and LC) are ordered in decreasing risk of collapse. The categories Data Deficient and Not Evaluated do not indicate a level of risk.
+For further details of the categories refer to the Guidelines for the application of IUCN Red List of Ecosystems Categories and Criteria [@bland2017guidelines].
+We applied version 2.2 of the IUCN Red List of Ecosystems Criteria (Table 1.1).
+
+
+::: {.callout-warning}
+## TODO: Add Table 1.1
+
+The IUCN Red List of Ecosystems Criteria, Version 2.2. Source: [@bland2017guidelines].
+:::
+
+### Assessment process
+
+Application of the IUCN Red List of Ecosystems Categories and Criteria follows a generic sequential process that includes:
+
+- Adapting the newly developed global ecosystem typology [@keith2020indicative; @keith2022earth] to the area of assessment (Myanmar's terrestrial environment, @fig-country-map). This process is guided by experts and the result is a list of ecosystem types for the area of assessment that will be assessed under the RLE protocol;
+- Describing each of the ecosystem types in ecosystem typology following the standard approach detailed in the Guidelines for the application of IUCN Red List of Ecosystems Categories and Criteria [@bland2017guidelines];
+- If no map data is available to support the assessment, an ecosystem mapping project is required to support the ecosystem descriptions and assessment of several of the RLE criteria;
+- Applying the assessment criteria to each ecosystem type, which requires extensive data searches and analyses. The outcome of each ecosystem assessment consists of a status of the ecosystem under 5 criteria and 18 subcriteria of the IUCN Red List of Ecosystems categories and criteria;
+- Compiling the results into a comprehensive IUCN Red List of Ecosystems for the area of assessment (this report), which describes each ecosystem and identifies ecosystems according to their risk of collapse.
+
+This report details each of these steps in the following sections.

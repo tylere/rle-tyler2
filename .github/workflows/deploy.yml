@@ -1,0 +1,121 @@
+# Quarto GitHub Pages Deploy
+# Ensure your GitHub Pages settings for this repository are set to deploy with **GitHub Actions**.
+
+name: Quarto GitHub Pages Deploy
+on:
+  push:
+    # Runs on pushes targeting the default branch
+    branches: [main]
+  workflow_dispatch:
+env:
+  # `BASE_URL` determines, relative to the root of the domain, the URL that your site is served from.
+  # E.g., if your site lives at `https://mydomain.org/myproject`, set `BASE_URL=/myproject`.
+  # If, instead, your site lives at the root of the domain, at `https://mydomain.org`, set `BASE_URL=''`.
+  BASE_URL: /${{ github.event.repository.name }}
+  # GCP authentication (optional - step will be skipped if not configured)
+  GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+# Serialize Pages deploys under one explicit, per-repository group; never cancel
+# an in-progress production deploy. GitHub keeps only the latest queued run per
+# group, so redundant pushes coalesce automatically.
+concurrency:
+  group: pages-${{ github.repository }}
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: ${{ vars.SETUP_COMPLETE == 'true' }}
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    # Bound a hung run. Large national renders can take a while, so allow ample
+    # headroom (the default is 6h).
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v5
+      - name: Setup Pages
+        uses: actions/configure-pages@v6
+      - name: Setup Pixi
+        uses: prefix-dev/setup-pixi@v0.10.0
+        timeout-minutes: 15
+        with:
+          # Pin pixi for reproducible, stable cache keys (floor matches
+          # requires-pixi >=0.68.0 in pyproject.toml).
+          pixi-version: v0.68.0
+          # setup-pixi auto-keys the environment cache off pixi.lock.
+          cache: true
+          # pixi install --locked: fail fast if pixi.lock has drifted from pyproject.toml.
+          locked: true
+      # Fail fast (before TinyTeX/auth/COG/the long render) when the ecosystem
+      # caches the render depends on are missing/stale, or a large data source has
+      # no caches and would OOM. HTTP-only, so it needs no GCP credentials.
+      - name: Check ecosystem caches
+        timeout-minutes: 5
+        run: pixi run check-caches
+      - name: Cache TinyTeX
+        uses: actions/cache@v4
+        with:
+          path: ~/.TinyTeX
+          # Refresh when the environment (incl. the pinned Quarto version) changes.
+          key: tinytex-${{ runner.os }}-${{ hashFiles('pixi.lock') }}
+          restore-keys: tinytex-${{ runner.os }}-
+      # Always run: `quarto install tinytex` detects an existing install (from the
+      # restored cache) and skips the download, so this is fast on a cache hit —
+      # while still registering TinyTeX (tlmgr PATH symlinks) so the PDF render
+      # finds it. Retried because the download is network-dependent.
+      - name: Install TinyTeX
+        timeout-minutes: 15
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          for attempt in 1 2 3; do
+            pixi run tinytex-install && exit 0
+            echo "::warning::tinytex-install attempt $attempt failed; retrying in 15s"
+            sleep 15
+          done
+          echo "::error::tinytex-install failed after 3 attempts"; exit 1
+      - name: Authenticate to Google Cloud
+        if: ${{ env.GCP_WORKLOAD_IDENTITY_PROVIDER != '' }}
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      # Build/publish the ecosystem COG and record ecosystem_raster.cog_url so the
+      # assessment pages can show the ecosystem map. Idempotent and skip-if-exists,
+      # so it only does heavy work when ecosystem_source.data changes. Skipped when
+      # GCP is not configured (pages then show the "COG not built yet" note). Must
+      # run before Render, which reads the recorded cog_url.
+      - name: Build and publish ecosystem COG
+        if: ${{ env.GCP_WORKLOAD_IDENTITY_PROVIDER != '' }}
+        env:
+          # The COG bucket is derived from this project ({project}-rle-cogs).
+          GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+        run: |
+          # Pass the project explicitly rather than via GOOGLE_CLOUD_PROJECT:
+          # pixi's activation env pins GOOGLE_CLOUD_PROJECT to the Earth Engine
+          # project (goog-rle-assessments), which is valid for EE but cannot be a
+          # GCS bucket prefix ('goog' is reserved). --project overrides it so the
+          # COG bucket uses the real GCP project from the GCP_PROJECT_ID secret.
+          for attempt in 1 2 3; do
+            pixi run rasterize --project "$GCP_PROJECT_ID" && exit 0
+            echo "::warning::rasterize attempt $attempt failed; retrying in 15s"
+            sleep 15
+          done
+          echo "::error::rasterize failed after 3 attempts"; exit 1
+      - name: Render Quarto Project
+        env:
+          GOOGLE_CLOUD_PROJECT: ${{ secrets.GCP_PROJECT_ID }}
+        run: pixi run render
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: './_book'
+          include-hidden-files: true
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

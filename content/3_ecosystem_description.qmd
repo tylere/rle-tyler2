@@ -1,0 +1,49 @@
+---
+numbering:
+  table:
+    enumerator: 3.%s
+---
+
+## Ecosystem description and assessment
+
+Ecosystem accounts provided in this section consist of two components, an
+ecosystem description and a detailed summary of the application of the IUCN Red
+List of Ecosystem criteria.
+The ecosystem description follows the standard format suggested by the IUCN.
+Ecosystem descriptions are an essential component of IUCN Red List of Ecosystems
+assessments and serve the purpose of clearly defining each assessment unit.
+This allows repeated application of the categories and criteria to a single
+defined unit and supports red listing and cross-walking at the
+global scale.
+The associated assessment section provides the details the Red List assessments,
+including the data sources, methods of analysis, evidence statements and key
+references.
+
+: Components of ecosystem description {#tbl-components}
+
+| Component | Description |
+|-----------|-------------|
+| Authors | Authors of the description and the assessment. |
+| Myanmar ecosystem names | Alternative names of the ecosystem. |
+| Biome | Biome membership according to the global ecosystem typology. |
+| Functional group | Functional group membership according to the global ecosystem typology. |
+| Global classification | Classification code according to the global ecosystem typology. |
+| Description | General overview of the principal components and dynamics of the ecosystem. Includes a photograph of the ecosystem. |
+| Distribution | Short written description and range map of the spatial distribution of the ecosystem. |
+| Characteristic native biota | Identifies the defining biotic features of the ecosystem, including diagnostic native taxa, functional components of the characteristic biota. |
+| Abiotic environment | Identifies the defining abiotic features of the ecosystem, including descriptions of the characteristic states or summary of values of the key abiotic variables. |
+| Key processes and interactions | Describes the key ecosystem drivers and interactions among biota and the abiotic environment. |
+| Major threats | Short summary of the major threats and impacts to the ecosystem. |
+| Ecosystem collapse definition | Short description of the collapsed state of the ecosystem and any associated thresholds. |
+| Assessment summary | Short summary of the red list of ecosystems assessment. |
+| Assessment outcome | Short format assessed status of the ecosystem. |
+| IUCN Red List of Ecosystems Categories and Criteria | Version of the IUCN Red List of Ecosystems criteria used in the assessment. |
+| Year published | Publication year. |
+| Date assessed | The date the ecosystem assessment was completed. |
+| Assessment credits | Names the authors, reviewers and contributors to the assessment. |
+| Assessment summary | Short summary of the red list of ecosystems assessment. |
+| Criterion A | Description of data, analysis and methods used to assess the criterion and the status outcome. |
+| Criterion B | Description of data, analysis and methods used to assess the criterion and the status outcome. |
+| Criterion C | Description of data, analysis and methods used to assess the criterion and the status outcome. |
+| Criterion D | Description of data, analysis and methods used to assess the criterion and the status outcome. |
+| Criterion E | Description of data, analysis and methods used to assess the criterion and the status outcome. |

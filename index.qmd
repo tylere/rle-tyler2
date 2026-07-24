@@ -1,0 +1,40 @@
+---
+number-sections: false
+authors:
+    - name: Jane Smith
+    - name: José García
+    - name: Wei Wang
+
+---
+
+{{< meta year >}} | Version {{< meta version >}}
+
+# Home {.unnumbered}
+
+::: {.content-hidden unless-meta="show-instructions"}
+
+:::: {.callout-important}
+## How to customize the ecosystems shown in the Report
+
+- Update the `ecosystem_source` section in the `config/country_config.yaml` file.
+  - `data`: the URL of the GeoJSON file containing the ecosystems data.
+  - `ecosystem_name_column`: the name of the column containing the ecosystem names.
+  - `ecosystem_code_column`: *(optional)* the name of the column containing the ecosystem codes.
+  - `functional_group_column`: *(optional)* the name of the column containing the functional group codes.
+::::
+
+
+:::: {.callout-important}
+## How to customize the Home page
+
+- To update:
+  - the report's title, edit the `book.title` value in the `_quarto.yml` file.
+  - the report's version, edit the `version` value in the `_quarto.yml` file.
+  - the report's authors, edit the `authors` list in the `index.qmd` file.
+  - the report's year, edit the `year` value in the `index.qmd` file.
+:::: 
+
+:::: {.callout-important}
+**To hide these instructions on all pages, set `show-instructions: false` in the `_quarto.yml` file.**
+::::
+:::

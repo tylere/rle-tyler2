@@ -1,0 +1,345 @@
+---
+jupyter: python3
+---
+
+# Criterion B Details {.unnumbered}
+
+```{python}
+#| label: set-ecosystem-code
+#| echo: true
+# Default ecosystem code for template development.
+# This line is replaced by build_ecosystem_pages.py for each ecosystem.
+ecosystem_code = 'T1.1.1'
+```
+
+Import Python modules.
+
+```{python}
+#| label: import-modules
+import os
+import yaml
+from pathlib import Path
+from lonboard import Map
+from rle.core import Ecosystems, criterion_b_status, rle_category
+from rle.core.eoo import make_eoo
+from rle.core.aoo import make_aoo_grid
+```
+
+Load the country config file.
+
+```{python}
+#| label: load-country-config
+project_root = os.environ.get('PIXI_PROJECT_ROOT', str(Path('..').resolve()))
+config_path = Path(project_root) / 'config' / 'country_config.yaml'
+with open(config_path) as f:
+    config = yaml.safe_load(f)
+
+# Ecosystem index (the COG pixel value for this ecosystem), looked up by code
+# from the canonical index table. Absent if the index has not been built yet.
+import csv
+ecosystem_index = None
+index_csv = Path(project_root) / 'config' / 'ecosystems' / 'index.csv'
+if index_csv.exists():
+    with open(index_csv) as f:
+        for row in csv.DictReader(f):
+            if row['code'] == ecosystem_code:
+                ecosystem_index = int(row['index'])
+                break
+```
+
+## Load & Filter Ecosystem Data
+
+Load data for all the ecosystems.
+
+```{python}
+#| label: load-ecosystems
+import sys
+# Shared config helpers live in scripts/; make them importable from here.
+sys.path.insert(0, str(Path(project_root) / 'scripts'))
+from _config import ensure_vector_source
+
+source = config['ecosystem_source']
+# ecosystem_code_column is optional: fall back to the name column.
+ecosystem_column = source.get('ecosystem_code_column') or source.get('ecosystem_name_column')
+# Prefer the ecosystem-sorted `optimized_data` copy when configured, so that
+# filtering to one ecosystem uses parquet predicate pushdown instead of loading
+# the whole national map into memory. Falls back to `data`.
+ecosystems = Ecosystems.from_file(
+    ensure_vector_source(source.get('optimized_data') or source['data']),
+    ecosystem_column=ecosystem_column,
+    ecosystem_name_column=source.get('ecosystem_name_column'),
+    functional_group_column=source.get('functional_group_column')
+)
+```
+
+Filter by the  `{python} ecosystem_code` and check the number of features.
+
+```{python}
+#| label: filter-ecosystem
+#| echo: true
+#| output: true
+ecosystem = ecosystems.filter(ecosystem_code)
+has_data = ecosystem.size() > 0
+print(f'{ecosystem.size() = }')
+if not has_data:
+    from IPython.display import Markdown, display
+    display(Markdown(
+        f'**No spatial data found for {ecosystem_code}.** '
+        f'Criterion B calculations are skipped.'
+    ))
+```
+
+## Extent of Occurrence (EOO) (subcriterion B1)
+
+> **Extent of occurrence (EOO).** The EOO of an ecosystem is the area (km2) of a minimum convex polygon – the smallest polygon in which no internal angle exceeds 180° that encompasses all known current spatial occurrences of the ecosystem type. 
+> 
+> The minimum convex polygon (also known as a convex hull) must not exclude any areas, discontinuities or disjunctions, regardless of whether the ecosystem can occur in those areas or not. Regions such as oceans (for terrestrial ecosystems), land (for coastal or marine ecosystems), or areas outside the study area (such as in a different country) must remain included within the minimum convex polygon to ensure that this standardised method is comparable across ecosystem types. In addition, these features contribute to spreading risks across the distribution of the ecosystem by making different parts of its distribution more spatially independent.
+
+### Calculate EOO
+
+Start by calculating the convex hull of the ecosystem's distribution.
+
+```{python}
+#| label: calculate-eoo
+#| echo: true
+import geopandas as gpd
+
+if has_data:
+    ecosystem_geometry = ecosystem.geometry.union_all()
+    gdf_ecosystem_polygons = gpd.GeoDataFrame(geometry=[ecosystem_geometry], crs=ecosystem.geometry.crs)
+    hull = ecosystem_geometry.convex_hull
+    gdf_hull = gpd.GeoDataFrame(geometry=[hull], crs=ecosystem.geometry.crs)
+```
+
+Display the ecosystem's distribution and the convex hull.
+
+```{python}
+#| label: display-eoo
+#| echo: true
+from lonboard import Map, PolygonLayer
+from rle.core.viz import smart_map
+
+if has_data:
+    eoo_hull = make_eoo(ecosystem).compute()
+    display(smart_map([eoo_hull, ecosystem]))
+```
+
+```{python}
+#| label: calculate-eoo-area
+#| echo: true
+if has_data:
+    hull_ea = gdf_hull.to_crs("ESRI:54034")
+    eoo = hull_ea.geometry.iloc[0].area / 1e6
+    print(f'EOO is {eoo:.1f} km2')
+```
+
+Then calculate the area of the convex hull polygon.
+
+### Direct calculation of EOO
+
+EOO can also be calculated directly using ...
+
+```{python}
+#| label: direct-calculation-eoo
+#| echo: true
+if has_data:
+    ecosystem.eoo
+```
+
+Verify that the area returned by calling `make_eoo(ecosystem).compute().area_km2` is the same as the area of the convex hull polygon.
+
+```{python}
+#| label: verify-eoo-area
+#| echo: true
+if has_data:
+    assert ecosystem.eoo == eoo
+```
+
+
+## Area of Occupancy (AOO) (subcriterion B2)
+
+> The protocol for this adjustment includes the following steps:
+>
+>   (1) Intersect AOO grid with the ecosystem's distribution map.
+>   (2) Calculate extent of the ecosystem type in each grid cell (`area`) and sum these areas to obtain the total ecosystem area (`total area`).
+>   (3) Arrange grid cells in ascending order based on their area (smaller first). Calculate accumulated sum of area per cell (`cumulative area`).
+>   (4) Calculate `cumulative proportion` by dividing `cumulative area` by `total area` (cumulative proportion takes values between 0 and 1)
+>   (5) Calculate AOO by counting the number of cells with a `cumulative proportion` greater than 0.01 (i.e. exclude cells that in combination account for up to 1% of the total mapped extent of the ecosystem type).
+
+### AOO Calculation Details
+
+#### Intersect AOO grid and ecosystem map
+
+> (1) Intersect AOO grid with the ecosystem's distribution map
+
+```{python}
+#| label: intersect-aoo-grid-and-ecosystem-map
+#| echo: true
+from pathlib import Path
+from rle.core.aoo import make_aoo_grid_cached
+
+if has_data:
+    # Prefer a prebuilt grid cache (e.g. a gs:// URI) so the national AOO grid
+    # is not recomputed during CI renders — computing it from the full national
+    # ecosystem map peaks at many GB of RAM. Fall back to a local cache when no
+    # prebuilt cache is configured. Build one with `pixi run build-caches`.
+    cache_path = (
+        source.get('aoo_grid_cache_url')
+        or (Path(project_root) / '.cache' / 'aoo_grid.parquet')
+    )
+    aoo_grid = make_aoo_grid_cached(ecosystems, cache_path=cache_path)
+    aoo_grid_filtered = aoo_grid.filter_by_ecosystem(ecosystem_code)
+```
+
+Visualize variations in the AOO grid.
+
+```{python}
+#| label: visualize-aoo-grid
+#| echo: true
+from matplotlib.colors import LinearSegmentedColormap
+from lonboard.colormap import apply_continuous_cmap
+from rle.core.aoo import slugify_ecosystem_name
+
+ecosystem_column = slugify_ecosystem_name(ecosystem_code)
+if has_data:
+    cmap = LinearSegmentedColormap.from_list("white_red", ["white", "red"])
+    values = aoo_grid_filtered.grid_cells[ecosystem_column].values
+    normalized = (values - values.min()) / (values.max() - values.min())
+    colors = apply_continuous_cmap(normalized, cmap)
+    display(smart_map([(aoo_grid_filtered, {"get_fill_color": colors}), ecosystem]))
+```
+
+#### Calculate grid cell area and total area
+
+> (2) Calculate extent of the ecosystem type in each grid cell (`area`) and sum these areas to obtain the total ecosystem area (`total area`).
+
+```{python}
+#| label: calculate-grid-cell-area
+#| echo: true
+if has_data:
+    keep = ['geometry', 'grid_col', 'grid_row', ecosystem_column]
+    gdf = aoo_grid_filtered.grid_cells[keep]
+    display(gdf)
+```
+
+The column `{python} ecosystem_column` contains the (fractional) area of the ecosystem in each grid cell.
+
+Sum up the areas of each grid cell to get the total area.
+
+```{python}
+#| label: calculate-total-area
+#| echo: true
+if has_data:
+    total_area = gdf[ecosystem_column].sum()
+    display(total_area)
+```
+
+#### Calculate cumulative area
+
+> (3) Arrange grid cells in ascending order based on their area (smaller first). Calculate accumulated sum of area per cell (`cumulative area`).
+
+```{python}
+#| label: calculate-cumulative-area
+#| echo: true
+if has_data:
+    gdf = gdf.sort_values(by=ecosystem_column)
+    gdf["cumulative_area"] = gdf[ecosystem_column].cumsum()
+    display(gdf)
+```
+
+#### Calculate cumulative proportion
+
+> (4) Calculate `cumulative proportion` by dividing `cumulative area` by `total area` (cumulative proportion takes values between 0 and 1)
+
+```{python}
+#| label: calculate-cumulative-proportion
+#| echo: true
+if has_data:
+    gdf["cumulative_proportion"] = gdf["cumulative_area"] / total_area
+    display(gdf)
+```
+
+#### Count AOO cells
+
+> (5) Calculate AOO by counting the number of cells with a `cumulative proportion` greater than 0.01 (i.e. exclude cells that in combination account for up to 1% of the total mapped extent of the ecosystem type).
+
+```{python}
+#| label: count-aoo-cells
+#| echo: true
+if has_data:
+    aoo = len(gdf[gdf["cumulative_proportion"] > 0.01])
+    print(f'AOO is {aoo} cells')
+```
+
+### AOO Calculation (direct call)
+
+```{python}
+#| label: aoo-calculation-direct-call
+if has_data:
+    aoo_count = ecosystem.aoo
+    print(f'AOO: {aoo_count} grid cells')
+```
+
+## Criterion B Summary
+
+```{python}
+#| label: criterion-b-summary
+#| echo: false
+#| output: asis
+# Classify the Criterion B status from the spatial metrics (EOO -> B1, AOO -> B2)
+# using the IUCN RLE Guidelines v2.0 thresholds, and present the overall category
+# as a colored badge plus a per-sub-criterion table. These are the *spatial*
+# thresholds only; a final listing also needs >=1 of sub-conditions a-c (noted).
+
+
+def _cat_label(abbr):
+    cat = rle_category(abbr)
+    return f'{cat["name"]} ({abbr})' if cat else (abbr or 'N/A')
+
+
+def _cat_colors(abbr):
+    cat = rle_category(abbr)
+    bg = cat['background_color'] if cat else 'transparent'
+    # Dark text on light fills, light text on dark fills.
+    fg = '#000' if bg in ('yellow', 'green', 'lightgray', 'white') else '#fff'
+    return bg, fg
+
+
+if has_data:
+    eco_name = ecosystem.ecosystem_name(ecosystem_code)
+    index_str = ecosystem_index if ecosystem_index is not None else 'N/A'
+    status = criterion_b_status(eoo_km2=eoo, aoo_cells=aoo)
+    overall = status['overall']
+    bg, fg = _cat_colors(overall)
+
+    chip = (
+        f'<span style="display:inline-block;padding:3px 10px;border-radius:4px;'
+        f'background:{bg};color:{fg};font-weight:bold;">{_cat_label(overall)}</span>'
+    )
+    print(
+        f'<div style="border-left:6px solid {bg};padding:8px 14px;margin:8px 0;">'
+        f'<div style="font-size:0.8em;text-transform:uppercase;letter-spacing:0.05em;'
+        f'opacity:0.7;">Criterion B status (spatial)</div>'
+        f'<div style="margin-top:4px;">{chip} '
+        f'<span style="opacity:0.75;">&mdash; {eco_name} ({ecosystem_code}), '
+        f'index {index_str}</span></div></div>\n'
+    )
+
+    print(
+        '::: {.callout-note appearance="simple"}\n'
+        'Status reflects the **spatial thresholds** for EOO (B1) and AOO (B2) only. '
+        'A final listing under B1/B2 additionally requires at least one of: '
+        '(a) an observed or inferred continuing decline; (b) threatening processes '
+        'likely to cause continuing decline within 20 years; or (c) few threat-defined '
+        'locations &mdash; none of which are derived from the spatial metrics.\n'
+        ':::\n'
+    )
+
+    print('| Sub-criterion | Metric | Value | Category |')
+    print('|---|---|---|---|')
+    print(f'| B1 | EOO | {eoo:.0f} km² | {_cat_label(status["B1"])} |')
+    print(f'| B2 | AOO | {aoo} cells | {_cat_label(status["B2"])} |')
+    print(f'| **Overall B** | — | — | **{_cat_label(overall)}** |')
+else:
+    print(f'No spatial data available for {ecosystem_code}.')
+```

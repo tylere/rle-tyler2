@@ -1,0 +1,5 @@
+{
+    "python.defaultInterpreterPath": "${workspaceFolder}/.pixi/envs/default/bin/python",
+    "python.testing.pytestEnabled": false,
+    "editor.rulers": [80]
+}

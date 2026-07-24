@@ -1,0 +1,19 @@
+country_name: Colombia
+country_code: CO
+view_state:
+  longitude: -72.0
+  latitude: 4.0
+  zoom: 11
+ecosystem_source:
+  data: /Users/tylere/Documents/GitHub/RLE-Assessment/rle_workshop/data/ECOSISTEMAS_MEC_122024.parquet
+  ecosystem_name_column: ecos_general
+  optimized_data: gs://rle-tyler-rle-cogs/cache/ECOSISTEMAS_MEC_122024_sorted.parquet
+  aoo_grid_cache_url: gs://rle-tyler-rle-cogs/cache/ECOSISTEMAS_MEC_122024_aoo_grid.parquet
+# Ecosystem COG resolution (metres, in the ESRI:54034 equal-area CRS) for the
+# AOO/EOO raster and maps. 100 m is the usual national default; 10 m over
+# Colombia is a large grid and may be slow or exceed resources — testing.
+ecosystem_raster:
+  resolution_m: 10
+# Overview-map coloring: `ecosystem` (default) or `functional_group` (needs a
+# functional_group_column, so it falls back to `ecosystem` for this dataset).
+# map_color_by: ecosystem

@@ -1,0 +1,28 @@
+---
+number-sections: false
+---
+
+# Preface {.unnumbered}
+
+{{< lipsum 1 >}}
+
+::: {.content-hidden unless-meta="show-instructions"}
+
+:::: {.callout-important}
+## How to customize the Preface page
+
+- To modify the preface text, edit the `content/0.2_preface.qmd` file.
+- To add an author to the preface, add the author's name to the `authors` list
+  in the YAML header of the `0.2_preface.qmd` file.
+  For example:
+```yaml
+authors:
+    - name: Ima Author
+```
+- To remove the preface section, edit the `_quarto.yml` file and remove the
+  `- content/0.2_preface.qmd` line.
+
+**To hide these instructions on all pages, set `show-instructions: false`
+in the `_quarto.yml` file.**
+::::
+:::

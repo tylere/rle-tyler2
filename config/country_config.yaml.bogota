@@ -1,0 +1,17 @@
+country_name: Colombia
+country_code: CO
+view_state:
+  longitude: 0.0
+  latitude: 0.0
+  zoom: 11
+ecosystem_source:
+  data: https://storage.googleapis.com/rle-tyler-rle-cogs/ecosystems/ECOSISTEMAS_MEC_122024_bogota_area.parquet
+  ecosystem_name_column: ecos_general
+# Ecosystem COG resolution (metres, in the ESRI:54034 equal-area CRS) for the
+# AOO/EOO raster and maps. The national default is 100 m; the Bogotá extent is
+# small enough to rasterize at a finer 10 m grid.
+ecosystem_raster:
+  resolution_m: 10
+# Overview-map coloring: `ecosystem` (default) or `functional_group` (needs a
+# functional_group_column, so it falls back to `ecosystem` for this dataset).
+# map_color_by: ecosystem
